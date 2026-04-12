@@ -1292,26 +1292,33 @@ async function testFirebase() {
     try { firebase.apps.filter(a => a.name.startsWith('test_')).forEach(a => a.delete()); } catch (_) {}
   }
 }
+// ===== FIREBASE CONFIG =====
+const DEFAULT_FB_CONFIG = {
+  apiKey: "AIzaSyBWL4MLbTpKqe8XQiN8qWwAWjNu_et51JM",
+  authDomain: "yoga-manager-c200b.firebaseapp.com",
+  projectId: "yoga-manager-c200b",
+  storageBucket: "yoga-manager-c200b.firebasestorage.app",
+  messagingSenderId: "673316553217",
+  appId: "1:673316553217:web:290bff898c6d5fb0fdf600"
+};
+
 // ===== INIT =====
 renderStudents();
 document.getElementById('fab').style.display = 'flex';
-// Load Firebase config from storage and connect
+// Use saved config or fall back to built-in config
 const _savedFbConfig = localStorage.getItem(FB_CONFIG_KEY);
-if (_savedFbConfig) {
-  try { initFirebase(JSON.parse(_savedFbConfig)); } catch (_) { updateSyncStatus('none', null); }
-} else {
-  updateSyncStatus('none', null);
-}
+const _fbConfig = _savedFbConfig ? JSON.parse(_savedFbConfig) : DEFAULT_FB_CONFIG;
+try { initFirebase(_fbConfig); } catch (_) { updateSyncStatus('none', null); }
 </script>
 <!-- Firebase compat SDK (loaded last so the app JS above can reference firebase.* safely) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-  // Re-run Firebase init after SDK loads (in case config was already saved)
+  // Re-run Firebase init after SDK loads (SDK may not have been ready when page JS ran)
   (function() {
-    const cfg = localStorage.getItem(FB_CONFIG_KEY);
-    if (cfg && !db) {
-      try { initFirebase(JSON.parse(cfg)); } catch (_) {}
+    if (!db) {
+      const cfg = localStorage.getItem(FB_CONFIG_KEY);
+      try { initFirebase(cfg ? JSON.parse(cfg) : DEFAULT_FB_CONFIG); } catch (_) {}
     }
   })();
 </script>
