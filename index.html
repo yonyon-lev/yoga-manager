@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול שיעורי יוגה</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #6b8f71;
+    --primary-dark: #4a6b50;
+    --accent: #c9a96e;
+    --bg: #f5f0eb;
+    --card-bg: #ffffff;
+    --text: #2d2d2d;
+    --text-light: #666;
+    --danger: #c0392b;
+    --success: #27ae60;
+    --warning: #e67e22;
+    --border: #ddd;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Header */
+  header { background: var(--primary); color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  header h1 { font-size: 1.2rem; }
+  header .subtitle { font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
+  .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; display: none; }
+  .back-btn.visible { display: block; }
+
+  /* Nav */
+  nav { display: flex; background: var(--primary-dark); overflow-x: auto; }
+  nav button { flex: 1; min-width: 80px; padding: 12px 8px; background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  nav button.active { color: white; border-bottom-color: var(--accent); }
+
+  /* Main */
+  main { padding: 16px; max-width: 700px; margin: 0 auto; }
+
+  /* Cards */
+  .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 1rem; margin-bottom: 12px; color: var(--primary-dark); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+  /* Student list */
+  .student-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .student-item:last-child { border-bottom: none; }
+  .student-item:active { background: #f0f0f0; }
+  .student-name { font-weight: 600; font-size: 1rem; }
+  .student-meta { font-size: 0.78rem; color: var(--text-light); margin-top: 3px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+  .badge-ok { background: #d4edda; color: var(--success); }
+  .badge-warn { background: #fff3cd; color: var(--warning); }
+  .badge-danger { background: #f8d7da; color: var(--danger); }
+  .badge-gray { background: #e9ecef; color: #666; }
+
+  /* Buttons */
+  .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:active { background: var(--primary-dark); }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-ghost { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+  .btn-block { display: block; width: 100%; text-align: center; margin-top: 8px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Form */
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--text-light); }
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; direction: rtl; }
+  input:focus, select:focus { outline: none; border-color: var(--primary); }
+  .radio-group { display: flex; gap: 10px; }
+  .radio-option { flex: 1; padding: 10px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .radio-option.selected { border-color: var(--primary); background: #eef5ef; }
+  .radio-option input { display: none; }
+  .radio-option .price { font-weight: 700; color: var(--primary-dark); }
+  .radio-option .desc { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+
+  /* Summary boxes */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .summary-box { background: var(--bg); border-radius: 10px; padding: 12px; text-align: center; }
+  .summary-box .num { font-size: 1.6rem; font-weight: 700; color: var(--primary-dark); }
+  .summary-box .lbl { font-size: 0.72rem; color: var(--text-light); margin-top: 2px; }
+
+  /* Attendance */
+  .attendance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+  .att-day { background: var(--bg); border-radius: 8px; padding: 8px 6px; text-align: center; font-size: 0.78rem; }
+  .att-day.present { background: #d4edda; color: var(--success); font-weight: 600; }
+  .att-day .date { font-weight: 600; }
+  .att-day .weekday { font-size: 0.65rem; color: var(--text-light); margin-top: 2px; }
+
+  /* Card info */
+  .card-info-box { border: 2px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+  .card-info-box.active-card { border-color: var(--primary); }
+  .card-info-box.expired { border-color: var(--danger); background: #fff5f5; }
+  .card-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.85rem; }
+  .card-info-row:last-child { margin-bottom: 0; }
+  .progress-bar { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.3s; }
+  .progress-fill.low { background: var(--danger); }
+  .progress-fill.mid { background: var(--warning); }
+
+  /* Tab content */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin-bottom: 16px; color: var(--primary-dark); }
+
+  /* Classes schedule */
+  .schedule-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .schedule-item:last-child { border-bottom: none; }
+  .schedule-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+
+  /* Payment log */
+  .payment-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  .payment-item:last-child { border-bottom: none; }
+  .payment-amount { font-weight: 700; color: var(--success); }
+
+  /* Search */
+  .search-bar { position: relative; margin-bottom: 14px; }
+  .search-bar input { padding-right: 38px; }
+  .search-bar .icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-light); }
+  .empty .emoji { font-size: 3rem; margin-bottom: 10px; }
+
+  /* FAB */
+  .fab { position: fixed; bottom: 24px; left: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.8rem; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; z-index: 150; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; z-index: 300; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* Section title */
+  .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin: 16px 0 8px; }
+
+  /* Report chart */
+  .month-block { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .month-block .month-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .month-block .month-name { font-weight: 700; font-size: 0.95rem; }
+  .month-block .month-total { font-weight: 700; color: var(--primary-dark); font-size: 1rem; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.82rem; }
+  .bar-label { width: 80px; flex-shrink: 0; color: var(--text-light); }
+  .bar-track { flex: 1; height: 18px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .bar-fill-yoga { background: var(--primary); }
+  .bar-fill-art { background: var(--accent); }
+  .bar-amt { width: 60px; text-align: left; font-weight: 600; flex-shrink: 0; }
+  .legend { display: flex; gap: 16px; margin-bottom: 14px; font-size: 0.8rem; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-left: 5px; vertical-align: middle; }
+  .summary-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .tab-pills { display: flex; gap: 6px; margin-bottom: 14px; }
+  .pill { padding: 6px 14px; border-radius: 20px; border: 2px solid var(--border); background: white; font-size: 0.82rem; cursor: pointer; font-weight: 600; }
+  .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  @media (max-width: 400px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .summary-3 { grid-template-columns: 1fr 1fr; }
+    header h1 { font-size: 1rem; }
+    .bar-label { width: 64px; }
+    .bar-amt { width: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🧘 ניהול שיעורי יוגה</h1>
+    <div class="subtitle">שני ורביעי | 19:00</div>
+  </div>
+  <button class="back-btn" id="backBtn" onclick="goBack()">← חזרה</button>
+</header>
+
+<nav id="mainNav">
+  <button class="active" onclick="showTab('students')">תלמידים</button>
+  <button onclick="showTab('attendance')">נוכחות</button>
+  <button onclick="showTab('payments')">תשלומים</button>
+  <button onclick="showTab('reports')">דוחות</button>
+  <button onclick="showTab('schedule')">לוח שיעורים</button>
+</nav>
+
+<main>
+  <!-- STUDENTS TAB -->
+  <div class="tab-content active" id="tab-students">
+    <div class="search-bar">
+      <span class="icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="חיפוש תלמיד..." oninput="renderStudents()">
+    </div>
+    <div id="studentsList"></div>
+  </div>
+
+  <!-- ATTENDANCE TAB -->
+  <div class="tab-content" id="tab-attendance">
+    <div class="card">
+      <h2>סמן נוכחות לשיעור</h2>
+      <div class="form-group">
+        <label>תאריך שיעור</label>
+        <input type="date" id="attDate" onchange="renderAttendanceForDate()">
+      </div>
+      <div id="attStudentsList"></div>
+    </div>
+  </div>
+
+  <!-- PAYMENTS TAB -->
+  <div class="tab-content" id="tab-payments">
+    <div class="card">
+      <h2>סיכום תשלומים</h2>
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="num" id="totalRevenue">0</div>
+          <div class="lbl">סה"כ הכנסות (₪)</div>
+        </div>
+        <div class="summary-box">
+          <div class="num" id="totalCards">0</div>
+          <div class="lbl">כרטיסיות פעילות</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <div class="section-title" style="flex:1;margin:0;line-height:2">יומן תשלומים</div>
+      <button class="btn btn-accent btn-sm" onclick="openActionArtModal()">+ Action Art</button>
+    </div>
+    <div class="card">
+      <div class="tab-pills">
+        <button class="pill active" id="pill-all" onclick="filterPayments('all')">הכל</button>
+        <button class="pill" id="pill-yoga" onclick="filterPayments('yoga')">יוגה</button>
+        <button class="pill" id="pill-art" onclick="filterPayments('art')">Action Art</button>
+      </div>
+      <div id="paymentLog"></div>
+    </div>
+  </div>
+
+  <!-- REPORTS TAB -->
+  <div class="tab-content" id="tab-reports">
+    <div class="card">
+      <h2>דוח הכנסות חודשי</h2>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:var(--primary)"></span>יוגה</span>
+        <span><span class="legend-dot" style="background:var(--accent)"></span>Action Art</span>
+      </div>
+      <div class="summary-3">
+        <div class="summary-box">
+          <div class="num" id="rpt-yoga-total">0</div>
+          <div class="lbl">יוגה (₪)</div>
+        </div>
+        <div class="summary-box">
+          <div class="num" id="rpt-art-total">0</div>
+          <div class="lbl">Action Art (₪)</div>
+        </div>
+        <div class="summary-box" style="grid-column:span 1">
+          <div class="num" id="rpt-grand-total">0</div>
+          <div class="lbl">סה"כ (₪)</div>
+        </div>
+      </div>
+    </div>
+    <div id="reportsMonthly"></div>
+  </div>
+
+  <!-- SCHEDULE TAB -->
+  <div class="tab-content" id="tab-schedule">
+    <div class="card">
+      <h2>לוח שיעורים קבוע</h2>
+      <div class="schedule-item"><div class="schedule-dot"></div><div><strong>שני</strong> — 19:00</div></div>
+      <div class="schedule-item"><div class="schedule-dot"></div><div><strong>רביעי</strong> — 19:00</div></div>
+    </div>
+    <div class="card">
+      <h2>מחירון</h2>
+      <div class="schedule-item"><div class="schedule-dot"></div><div><strong>כרטיסייה</strong> — 8 שיעורים ב-450 ₪ (תוקף 3 חודשים)</div></div>
+      <div class="schedule-item"><div class="schedule-dot"></div><div><strong>שיעור בודד</strong> — 65 ₪</div></div>
+    </div>
+    <div class="card">
+      <h2>שיעורים עתידיים</h2>
+      <div id="upcomingClasses"></div>
+    </div>
+  </div>
+
+  <!-- STUDENT DETAIL VIEW -->
+  <div class="tab-content" id="tab-student-detail">
+    <div id="studentDetailContent"></div>
+  </div>
+</main>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openAddStudentModal()" title="הוסף תלמיד">+</button>
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-overlay" id="addStudentModal">
+  <div class="modal">
+    <h3>➕ הוסף תלמיד</h3>
+    <div class="form-group">
+      <label>שם מלא *</label>
+      <input type="text" id="newStudentName" placeholder="שם התלמיד">
+    </div>
+    <div class="form-group">
+      <label>טלפון</label>
+      <input type="tel" id="newStudentPhone" placeholder="050-0000000">
+    </div>
+    <div class="form-group">
+      <label>רכישה ראשונה</label>
+      <div class="radio-group">
+        <label class="radio-option selected" id="opt-card8" onclick="selectPurchaseType('card8')">
+          <div class="price">450 ₪</div>
+          <div class="desc">כרטיסייה 8 שיעורים</div>
+        </label>
+        <label class="radio-option" id="opt-single" onclick="selectPurchaseType('single')">
+          <div class="price">65 ₪</div>
+          <div class="desc">שיעור בודד</div>
+        </label>
+        <label class="radio-option" id="opt-none" onclick="selectPurchaseType('none')">
+          <div class="price">—</div>
+          <div class="desc">ללא עכשיו</div>
+        </label>
+      </div>
+    </div>
+    <div class="form-group" id="purchaseDateGroup">
+      <label>תאריך רכישה</label>
+      <input type="date" id="newPurchaseDate">
+    </div>
+    <div class="form-group" id="paidGroup">
+      <label>סטטוס תשלום</label>
+      <select id="newPaidStatus">
+        <option value="paid">שולם ✓</option>
+        <option value="unpaid">טרם שולם</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveNewStudent()">שמור</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('addStudentModal')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CARD MODAL -->
+<div class="modal-overlay" id="addCardModal">
+  <div class="modal">
+    <h3>🎫 הוסף כרטיסייה / שיעור</h3>
+    <div class="form-group">
+      <label>סוג</label>
+      <div class="radio-group">
+        <label class="radio-option selected" id="card-opt-card8" onclick="selectCardType('card8')">
+          <div class="price">450 ₪</div>
+          <div class="desc">כרטיסייה 8 שיעורים</div>
+        </label>
+        <label class="radio-option" id="card-opt-single" onclick="selectCardType('single')">
+          <div class="price">65 ₪</div>
+          <div class="desc">שיעור בודד</div>
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>תאריך רכישה</label>
+      <input type="date" id="cardPurchaseDate">
+    </div>
+    <div class="form-group">
+      <label>סטטוס תשלום</label>
+      <select id="cardPaidStatus">
+        <option value="paid">שולם ✓</option>
+        <option value="unpaid">טרם שולם</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveNewCard()">שמור</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('addCardModal')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION ART PAYMENT MODAL -->
+<div class="modal-overlay" id="actionArtModal">
+  <div class="modal">
+    <h3>🎨 תשלום Action Art</h3>
+    <div class="form-group">
+      <label>שם המשתתף</label>
+      <input type="text" id="artName" placeholder="שם מלא">
+    </div>
+    <div class="form-group">
+      <label>סוג השתתפות</label>
+      <div class="radio-group">
+        <label class="radio-option selected" id="art-opt-series" onclick="selectArtType('series')">
+          <div class="price">סדרה מלאה</div>
+          <div class="desc">מחיר מלא</div>
+        </label>
+        <label class="radio-option" id="art-opt-session" onclick="selectArtType('session')">
+          <div class="price">מפגש בודד</div>
+          <div class="desc">חד פעמי</div>
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>סכום (₪)</label>
+      <input type="number" id="artAmount" placeholder="הכנס סכום" min="0">
+    </div>
+    <div class="form-group">
+      <label>שם הסדרה / קבוצה (אופציונלי)</label>
+      <input type="text" id="artSeries" placeholder="לדוגמה: סדרת אביב 2025">
+    </div>
+    <div class="form-group">
+      <label>תאריך תשלום</label>
+      <input type="date" id="artDate">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-accent" style="flex:1" onclick="saveActionArtPayment()">שמור</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('actionArtModal')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA LAYER =====
+const DB_KEY = 'yoga_app_v2';
+
+function loadData() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DB_KEY)) || { students: [], payments: [], actionArtPayments: [] };
+    if (!d.actionArtPayments) d.actionArtPayments = [];
+    return d;
+  } catch { return { students: [], payments: [], actionArtPayments: [] }; }
+}
+
+function saveData(data) {
+  localStorage.setItem(DB_KEY, JSON.stringify(data));
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// ===== STATE =====
+let currentTab = 'students';
+let currentStudentId = null;
+let newPurchaseType = 'card8';
+let newCardType = 'card8';
+let newArtType = 'series';
+let paymentsFilter = 'all';
+
+// ===== HELPERS =====
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addMonths(dateStr, n) {
+  const d = new Date(dateStr);
+  d.setMonth(d.getMonth() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function isExpired(dateStr) {
+  return dateStr < today();
+}
+
+function daysLeft(dateStr) {
+  const diff = new Date(dateStr) - new Date(today());
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function getActiveCard(student) {
+  // Most recent non-expired card with remaining classes
+  return student.cards
+    .filter(c => c.remainingClasses > 0 && !isExpired(c.expiryDate))
+    .sort((a, b) => b.purchaseDate.localeCompare(a.purchaseDate))[0] || null;
+}
+
+function getStudentStatus(student) {
+  const active = getActiveCard(student);
+  if (!active) {
+    // Check if has expired cards
+    const expired = student.cards.some(c => isExpired(c.expiryDate) || c.remainingClasses === 0);
+    return expired ? { label: 'פג תוקף', cls: 'badge-danger' } : { label: 'אין כרטיסייה', cls: 'badge-gray' };
+  }
+  const rem = active.remainingClasses;
+  if (rem <= 1) return { label: `נותרו ${rem}`, cls: 'badge-danger' };
+  if (rem <= 3) return { label: `נותרו ${rem}`, cls: 'badge-warn' };
+  return { label: `נותרו ${rem}`, cls: 'badge-ok' };
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== NAV =====
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  const navBtns = document.querySelectorAll('nav button');
+  const tabMap = { students: 0, attendance: 1, payments: 2, reports: 3, schedule: 4 };
+  if (tabMap[tab] !== undefined) navBtns[tabMap[tab]].classList.add('active');
+  currentTab = tab;
+  document.getElementById('backBtn').classList.remove('visible');
+  document.getElementById('fab').style.display = (tab === 'students') ? 'flex' : 'none';
+
+  if (tab === 'attendance') initAttendance();
+  if (tab === 'payments') renderPayments();
+  if (tab === 'reports') renderReports();
+  if (tab === 'schedule') renderUpcoming();
+  if (tab === 'students') renderStudents();
+}
+
+function openStudentDetail(id) {
+  currentStudentId = id;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-student-detail').classList.add('active');
+  document.getElementById('backBtn').classList.add('visible');
+  document.getElementById('fab').style.display = 'none';
+  renderStudentDetail(id);
+}
+
+function goBack() {
+  showTab('students');
+}
+
+// ===== STUDENTS LIST =====
+function renderStudents() {
+  const data = loadData();
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let students = data.students;
+  if (q) students = students.filter(s => s.name.toLowerCase().includes(q) || (s.phone||'').includes(q));
+  students.sort((a, b) => a.name.localeCompare(b.name, 'he'));
+
+  const el = document.getElementById('studentsList');
+  if (students.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="emoji">🧘</div><div>${q ? 'לא נמצאו תלמידים' : 'אין תלמידים עדיין'}</div>${!q ? '<div style="margin-top:8px;font-size:0.8rem">לחץ + להוספת תלמיד</div>' : ''}</div>`;
+    return;
+  }
+  el.innerHTML = students.map(s => {
+    const st = getStudentStatus(s);
+    const active = getActiveCard(s);
+    const meta = active ? `תוקף: ${formatDate(active.expiryDate)}` : (s.phone || '');
+    return `<div class="card" style="padding:12px 16px;cursor:pointer" onclick="openStudentDetail('${s.id}')">
+      <div class="student-item" style="padding:0;border:none">
+        <div>
+          <div class="student-name">${s.name}</div>
+          <div class="student-meta">${meta}${s.phone && active ? ' · ' + s.phone : ''}</div>
+        </div>
+        <span class="badge ${st.cls}">${st.label}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== STUDENT DETAIL =====
+function renderStudentDetail(id) {
+  const data = loadData();
+  const s = data.students.find(x => x.id === id);
+  if (!s) return;
+  const active = getActiveCard(s);
+
+  // Cards section
+  const cardsHtml = s.cards.length === 0 ? '<div class="empty" style="padding:20px">אין כרטיסיות</div>' :
+    s.cards.slice().sort((a,b) => b.purchaseDate.localeCompare(a.purchaseDate)).map(c => {
+      const expired = isExpired(c.expiryDate) || c.remainingClasses === 0;
+      const pct = c.type === 'card8' ? (c.remainingClasses / 8 * 100) : (c.remainingClasses > 0 ? 100 : 0);
+      const fillCls = pct <= 25 ? 'low' : pct <= 50 ? 'mid' : '';
+      const dl = daysLeft(c.expiryDate);
+      const daysTxt = expired ? '<span style="color:var(--danger)">פג תוקף</span>' : `${dl} ימים`;
+      const paidBadge = c.paid ? '<span class="badge badge-ok">שולם</span>' : `<span class="badge badge-danger" onclick="markPaid('${c.id}','${id}')" style="cursor:pointer">לא שולם ← לחץ לאישור</span>`;
+      return `<div class="card-info-box ${expired ? 'expired' : 'active-card'}">
+        <div class="card-info-row">
+          <strong>${c.type === 'card8' ? '🎫 כרטיסייה (8 שיעורים)' : '🎟️ שיעור בודד'}</strong>
+          ${paidBadge}
+        </div>
+        <div class="card-info-row"><span>רכישה:</span><span>${formatDate(c.purchaseDate)}</span></div>
+        <div class="card-info-row"><span>תוקף עד:</span><span>${formatDate(c.expiryDate)} · ${daysTxt}</span></div>
+        <div class="card-info-row"><span>נותרו:</span><span>${c.remainingClasses} שיעורים</span></div>
+        ${c.type === 'card8' ? `<div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${pct}%"></div></div>` : ''}
+      </div>`;
+    }).join('');
+
+  // Attendance
+  const attByMonth = {};
+  s.attendance.sort((a,b) => b.date.localeCompare(a.date)).forEach(a => {
+    const ym = a.date.slice(0,7);
+    if (!attByMonth[ym]) attByMonth[ym] = [];
+    attByMonth[ym].push(a);
+  });
+  const weekdays = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const attHtml = Object.keys(attByMonth).length === 0
+    ? '<div style="color:var(--text-light);font-size:0.85rem">אין נוכחות מתועדת</div>'
+    : Object.entries(attByMonth).map(([ym, arr]) => {
+        const [y,m] = ym.split('-');
+        const months = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+        return `<div class="section-title">${months[+m]} ${y}</div>
+        <div class="attendance-grid">${arr.map(a => {
+          const d = new Date(a.date + 'T12:00:00');
+          return `<div class="att-day present">
+            <div class="date">${formatDate(a.date)}</div>
+            <div class="weekday">${weekdays[d.getDay()]}</div>
+            <div style="margin-top:4px;font-size:0.7rem;cursor:pointer;color:#c0392b" onclick="removeAttendance('${id}','${a.date}')">✕ הסר</div>
+          </div>`;
+        }).join('')}</div>`;
+      }).join('');
+
+  document.getElementById('studentDetailContent').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <h2 style="border:none;padding:0;margin:0;font-size:1.2rem">${s.name}</h2>
+          ${s.phone ? `<div style="color:var(--text-light);font-size:0.85rem;margin-top:4px">📱 ${s.phone}</div>` : ''}
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${id}')">מחק</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>כרטיסיות</h2>
+      ${cardsHtml}
+      <button class="btn btn-primary btn-block btn-sm" onclick="openAddCardModal('${id}')">+ הוסף כרטיסייה / שיעור</button>
+    </div>
+
+    <div class="card">
+      <h2>נוכחות (${s.attendance.length} שיעורים)</h2>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>סמן נוכחות ידנית</label>
+        <div style="display:flex;gap:8px">
+          <input type="date" id="manualAttDate" value="${today()}" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="markManualAttendance('${id}')">סמן</button>
+        </div>
+      </div>
+      ${attHtml}
+    </div>
+  `;
+}
+
+function markPaid(cardId, studentId) {
+  const data = loadData();
+  const s = data.students.find(x => x.id === studentId);
+  if (!s) return;
+  const c = s.cards.find(x => x.id === cardId);
+  if (!c) return;
+  c.paid = true;
+  // Add to payment log
+  data.payments.push({ id: uid(), studentId, studentName: s.name, cardType: c.type, amount: c.amount, date: today() });
+  saveData(data);
+  renderStudentDetail(studentId);
+  showToast('תשלום אושר ✓');
+}
+
+function markManualAttendance(studentId) {
+  const date = document.getElementById('manualAttDate').value;
+  if (!date) return;
+  markAttendanceForStudent(studentId, date);
+  renderStudentDetail(studentId);
+}
+
+function markAttendanceForStudent(studentId, date) {
+  const data = loadData();
+  const s = data.students.find(x => x.id === studentId);
+  if (!s) return false;
+  if (s.attendance.some(a => a.date === date)) { showToast('נוכחות כבר סומנה לתאריך זה'); return false; }
+  const active = getActiveCard(s);
+  if (!active) { showToast('אין כרטיסייה פעילה — יש להוסיף כרטיסייה תחילה'); return false; }
+  s.attendance.push({ date, cardId: active.id });
+  active.remainingClasses--;
+  saveData(data);
+  showToast(`נוכחות סומנה ל${s.name}`);
+  return true;
+}
+
+function removeAttendance(studentId, date) {
+  if (!confirm('להסיר נוכחות לתאריך ' + formatDate(date) + '?')) return;
+  const data = loadData();
+  const s = data.students.find(x => x.id === studentId);
+  if (!s) return;
+  const att = s.attendance.find(a => a.date === date);
+  if (!att) return;
+  s.attendance = s.attendance.filter(a => a.date !== date);
+  // Restore class to card
+  const c = s.cards.find(x => x.id === att.cardId);
+  if (c) c.remainingClasses++;
+  saveData(data);
+  renderStudentDetail(studentId);
+  showToast('נוכחות הוסרה');
+}
+
+function deleteStudent(id) {
+  if (!confirm('למחוק את התלמיד לצמיתות?')) return;
+  const data = loadData();
+  data.students = data.students.filter(s => s.id !== id);
+  saveData(data);
+  showToast('תלמיד נמחק');
+  goBack();
+}
+
+// ===== ATTENDANCE TAB =====
+function initAttendance() {
+  document.getElementById('attDate').value = today();
+  renderAttendanceForDate();
+}
+
+function renderAttendanceForDate() {
+  const date = document.getElementById('attDate').value;
+  if (!date) return;
+  const data = loadData();
+  const el = document.getElementById('attStudentsList');
+  if (data.students.length === 0) { el.innerHTML = '<div class="empty"><div class="emoji">👥</div>אין תלמידים</div>'; return; }
+
+  const weekday = new Date(date + 'T12:00:00').getDay();
+  const isClassDay = weekday === 1 || weekday === 3;
+  const dayNames = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+  el.innerHTML = `
+    ${!isClassDay ? `<div style="background:#fff3cd;padding:10px;border-radius:8px;margin-bottom:12px;font-size:0.85rem">⚠️ יום ${dayNames[weekday]} — לא יום שיעור רגיל</div>` : `<div style="background:#d4edda;padding:10px;border-radius:8px;margin-bottom:12px;font-size:0.85rem">✓ יום ${dayNames[weekday]} — יום שיעור</div>`}
+    ${data.students.sort((a,b)=>a.name.localeCompare(b.name,'he')).map(s => {
+      const present = s.attendance.some(a => a.date === date);
+      const active = getActiveCard(s);
+      const canMark = !present && active;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-weight:600">${s.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-light)">${active ? `נותרו ${active.remainingClasses} שיעורים` : 'אין כרטיסייה פעילה'}</div>
+        </div>
+        ${present
+          ? `<span class="badge badge-ok">✓ נוכח</span>`
+          : `<button class="btn btn-primary btn-sm" ${canMark?'':'disabled'} onclick="markAttAndRefresh('${s.id}','${date}')">סמן נוכחות</button>`}
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function markAttAndRefresh(studentId, date) {
+  markAttendanceForStudent(studentId, date);
+  renderAttendanceForDate();
+}
+
+// ===== PAYMENTS TAB =====
+function filterPayments(type) {
+  paymentsFilter = type;
+  ['all','yoga','art'].forEach(t => {
+    document.getElementById('pill-' + t).classList.toggle('active', t === type);
+  });
+  renderPaymentLog();
+}
+
+function renderPayments() {
+  const data = loadData();
+  let yogaTotal = 0, artTotal = 0, activeCards = 0;
+  data.students.forEach(s => {
+    s.cards.forEach(c => { if (c.paid) yogaTotal += c.amount; });
+    if (getActiveCard(s)) activeCards++;
+  });
+  data.actionArtPayments.forEach(p => { artTotal += p.amount; });
+  document.getElementById('totalRevenue').textContent = (yogaTotal + artTotal).toLocaleString();
+  document.getElementById('totalCards').textContent = activeCards;
+  renderPaymentLog();
+}
+
+function renderPaymentLog() {
+  const data = loadData();
+  const el = document.getElementById('paymentLog');
+  const yogaItems = data.payments.map(p => ({ ...p, _source: 'yoga' }));
+  const artItems = data.actionArtPayments.map(p => ({ ...p, _source: 'art' }));
+  let all = [...yogaItems, ...artItems].sort((a, b) => b.date.localeCompare(a.date));
+  if (paymentsFilter === 'yoga') all = all.filter(p => p._source === 'yoga');
+  if (paymentsFilter === 'art') all = all.filter(p => p._source === 'art');
+  if (all.length === 0) { el.innerHTML = '<div class="empty" style="padding:20px">אין תשלומים</div>'; return; }
+  el.innerHTML = all.map(p => {
+    const isArt = p._source === 'art';
+    const dot = isArt ? `<span style="color:var(--accent)">🎨</span>` : `<span style="color:var(--primary)">🧘</span>`;
+    const sub = isArt
+      ? `${p.artType === 'series' ? 'סדרה מלאה' : 'מפגש בודד'}${p.seriesName ? ' · ' + p.seriesName : ''} · ${formatDate(p.date)}`
+      : `${p.cardType === 'card8' ? 'כרטיסייה 8 שיעורים' : 'שיעור בודד'} · ${formatDate(p.date)}`;
+    const name = isArt ? p.participantName : p.studentName;
+    return `<div class="payment-item">
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div style="margin-top:2px">${dot}</div>
+        <div>
+          <div style="font-weight:600">${name}</div>
+          <div style="font-size:0.72rem;color:var(--text-light)">${sub}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div class="payment-amount">${p.amount} ₪</div>
+        ${isArt ? `<span style="font-size:0.65rem;cursor:pointer;color:var(--danger)" onclick="deleteArtPayment('${p.id}')">✕ מחק</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== REPORTS TAB =====
+function renderReports() {
+  const data = loadData();
+  const MONTHS_HE = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const monthly = {}; // { 'YYYY-MM': { yoga: { card8: n, single: n, total: n }, art: { series: n, session: n, total: n } } }
+
+  data.payments.forEach(p => {
+    const ym = p.date.slice(0, 7);
+    if (!monthly[ym]) monthly[ym] = { yoga: { card8: 0, single: 0, total: 0 }, art: { series: 0, session: 0, total: 0 } };
+    if (p.cardType === 'card8') monthly[ym].yoga.card8 += p.amount;
+    else monthly[ym].yoga.single += p.amount;
+    monthly[ym].yoga.total += p.amount;
+  });
+
+  data.actionArtPayments.forEach(p => {
+    const ym = p.date.slice(0, 7);
+    if (!monthly[ym]) monthly[ym] = { yoga: { card8: 0, single: 0, total: 0 }, art: { series: 0, session: 0, total: 0 } };
+    if (p.artType === 'series') monthly[ym].art.series += p.amount;
+    else monthly[ym].art.session += p.amount;
+    monthly[ym].art.total += p.amount;
+  });
+
+  let grandYoga = 0, grandArt = 0;
+  Object.values(monthly).forEach(m => { grandYoga += m.yoga.total; grandArt += m.art.total; });
+  document.getElementById('rpt-yoga-total').textContent = grandYoga.toLocaleString();
+  document.getElementById('rpt-art-total').textContent = grandArt.toLocaleString();
+  document.getElementById('rpt-grand-total').textContent = (grandYoga + grandArt).toLocaleString();
+
+  const el = document.getElementById('reportsMonthly');
+  const sortedMonths = Object.keys(monthly).sort((a, b) => b.localeCompare(a));
+  if (sortedMonths.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="emoji">📊</div>אין נתונים עדיין</div>';
+    return;
+  }
+
+  const maxVal = Math.max(...sortedMonths.map(ym => monthly[ym].yoga.total + monthly[ym].art.total), 1);
+
+  el.innerHTML = sortedMonths.map(ym => {
+    const [y, m] = ym.split('-');
+    const d = monthly[ym];
+    const monthTotal = d.yoga.total + d.art.total;
+    const yogaPct = Math.round(d.yoga.total / maxVal * 100);
+    const artPct = Math.round(d.art.total / maxVal * 100);
+    const yogaBreakdown = [
+      d.yoga.card8 > 0 ? `כרטיסיות: ${d.yoga.card8} ₪` : '',
+      d.yoga.single > 0 ? `שיעורים בודדים: ${d.yoga.single} ₪` : ''
+    ].filter(Boolean).join(' | ');
+    const artBreakdown = [
+      d.art.series > 0 ? `סדרות: ${d.art.series} ₪` : '',
+      d.art.session > 0 ? `מפגשים: ${d.art.session} ₪` : ''
+    ].filter(Boolean).join(' | ');
+    return `<div class="month-block">
+      <div class="month-header">
+        <span class="month-name">${MONTHS_HE[+m]} ${y}</span>
+        <span class="month-total">${monthTotal.toLocaleString()} ₪</span>
+      </div>
+      ${d.yoga.total > 0 ? `
+      <div class="bar-row">
+        <div class="bar-label">🧘 יוגה</div>
+        <div class="bar-track"><div class="bar-fill bar-fill-yoga" style="width:${yogaPct}%"></div></div>
+        <div class="bar-amt">${d.yoga.total.toLocaleString()} ₪</div>
+      </div>
+      ${yogaBreakdown ? `<div style="font-size:0.72rem;color:var(--text-light);margin-bottom:8px;padding-right:88px">${yogaBreakdown}</div>` : ''}
+      ` : ''}
+      ${d.art.total > 0 ? `
+      <div class="bar-row">
+        <div class="bar-label">🎨 Action Art</div>
+        <div class="bar-track"><div class="bar-fill bar-fill-art" style="width:${artPct}%"></div></div>
+        <div class="bar-amt">${d.art.total.toLocaleString()} ₪</div>
+      </div>
+      ${artBreakdown ? `<div style="font-size:0.72rem;color:var(--text-light);padding-right:88px">${artBreakdown}</div>` : ''}
+      ` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ===== ACTION ART MODAL =====
+function openActionArtModal() {
+  document.getElementById('artName').value = '';
+  document.getElementById('artAmount').value = '';
+  document.getElementById('artSeries').value = '';
+  document.getElementById('artDate').value = today();
+  selectArtType('series');
+  document.getElementById('actionArtModal').classList.add('open');
+  setTimeout(() => document.getElementById('artName').focus(), 100);
+}
+
+function selectArtType(type) {
+  newArtType = type;
+  ['series','session'].forEach(t => {
+    document.getElementById('art-opt-' + t).classList.toggle('selected', t === type);
+  });
+}
+
+function saveActionArtPayment() {
+  const name = document.getElementById('artName').value.trim();
+  const amount = parseFloat(document.getElementById('artAmount').value);
+  if (!name) { showToast('נא להזין שם משתתף'); return; }
+  if (!amount || amount <= 0) { showToast('נא להזין סכום תקין'); return; }
+  const data = loadData();
+  data.actionArtPayments.push({
+    id: uid(),
+    participantName: name,
+    artType: newArtType,
+    amount,
+    seriesName: document.getElementById('artSeries').value.trim(),
+    date: document.getElementById('artDate').value || today()
+  });
+  saveData(data);
+  closeModal('actionArtModal');
+  renderPayments();
+  showToast('תשלום Action Art נשמר!');
+}
+
+function deleteArtPayment(id) {
+  if (!confirm('למחוק תשלום זה?')) return;
+  const data = loadData();
+  data.actionArtPayments = data.actionArtPayments.filter(p => p.id !== id);
+  saveData(data);
+  renderPayments();
+  showToast('תשלום נמחק');
+}
+
+// ===== SCHEDULE TAB =====
+function renderUpcoming() {
+  const el = document.getElementById('upcomingClasses');
+  const days = [];
+  const d = new Date();
+  while (days.length < 8) {
+    const wd = d.getDay();
+    if (wd === 1 || wd === 3) {
+      days.push(new Date(d));
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  const weekdays = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  el.innerHTML = days.map(dt => {
+    const ds = dt.toISOString().slice(0,10);
+    return `<div class="schedule-item"><div class="schedule-dot"></div><div><strong>${weekdays[dt.getDay()]}</strong> ${formatDate(ds)} — 19:00</div></div>`;
+  }).join('');
+}
+
+// ===== MODALS =====
+function openAddStudentModal() {
+  document.getElementById('newStudentName').value = '';
+  document.getElementById('newStudentPhone').value = '';
+  document.getElementById('newPurchaseDate').value = today();
+  document.getElementById('newPaidStatus').value = 'paid';
+  selectPurchaseType('card8');
+  document.getElementById('addStudentModal').classList.add('open');
+  setTimeout(() => document.getElementById('newStudentName').focus(), 100);
+}
+
+function openAddCardModal(studentId) {
+  currentStudentId = studentId;
+  document.getElementById('cardPurchaseDate').value = today();
+  document.getElementById('cardPaidStatus').value = 'paid';
+  selectCardType('card8');
+  document.getElementById('addCardModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function selectPurchaseType(type) {
+  newPurchaseType = type;
+  ['card8','single','none'].forEach(t => {
+    document.getElementById('opt-' + t).classList.toggle('selected', t === type);
+  });
+  const show = type !== 'none';
+  document.getElementById('purchaseDateGroup').style.display = show ? '' : 'none';
+  document.getElementById('paidGroup').style.display = show ? '' : 'none';
+}
+
+function selectCardType(type) {
+  newCardType = type;
+  ['card8','single'].forEach(t => {
+    document.getElementById('card-opt-' + t).classList.toggle('selected', t === type);
+  });
+}
+
+function saveNewStudent() {
+  const name = document.getElementById('newStudentName').value.trim();
+  if (!name) { showToast('נא להזין שם תלמיד'); return; }
+  const data = loadData();
+  const id = uid();
+  const student = { id, name, phone: document.getElementById('newStudentPhone').value.trim(), cards: [], attendance: [] };
+
+  if (newPurchaseType !== 'none') {
+    const purchaseDate = document.getElementById('newPurchaseDate').value || today();
+    const paid = document.getElementById('newPaidStatus').value === 'paid';
+    const isCard8 = newPurchaseType === 'card8';
+    const card = {
+      id: uid(),
+      type: newPurchaseType,
+      purchaseDate,
+      expiryDate: isCard8 ? addMonths(purchaseDate, 3) : addMonths(purchaseDate, 0).slice(0,7) + '-' + purchaseDate.slice(8),
+      totalClasses: isCard8 ? 8 : 1,
+      remainingClasses: isCard8 ? 8 : 1,
+      paid,
+      amount: isCard8 ? 450 : 65
+    };
+    // Single class expires same day (or end of month, let's say 1 month)
+    if (!isCard8) card.expiryDate = addMonths(purchaseDate, 1);
+    student.cards.push(card);
+    if (paid) data.payments.push({ id: uid(), studentId: id, studentName: name, cardType: card.type, amount: card.amount, date: today() });
+  }
+
+  data.students.push(student);
+  saveData(data);
+  closeModal('addStudentModal');
+  renderStudents();
+  showToast(`${name} נוסף בהצלחה!`);
+}
+
+function saveNewCard() {
+  const data = loadData();
+  const s = data.students.find(x => x.id === currentStudentId);
+  if (!s) return;
+  const purchaseDate = document.getElementById('cardPurchaseDate').value || today();
+  const paid = document.getElementById('cardPaidStatus').value === 'paid';
+  const isCard8 = newCardType === 'card8';
+  const card = {
+    id: uid(),
+    type: newCardType,
+    purchaseDate,
+    expiryDate: isCard8 ? addMonths(purchaseDate, 3) : addMonths(purchaseDate, 1),
+    totalClasses: isCard8 ? 8 : 1,
+    remainingClasses: isCard8 ? 8 : 1,
+    paid,
+    amount: isCard8 ? 450 : 65
+  };
+  s.cards.push(card);
+  if (paid) data.payments.push({ id: uid(), studentId: s.id, studentName: s.name, cardType: card.type, amount: card.amount, date: today() });
+  saveData(data);
+  closeModal('addCardModal');
+  renderStudentDetail(currentStudentId);
+  showToast('כרטיסייה נוספה!');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ===== INIT =====
+renderStudents();
+document.getElementById('fab').style.display = 'flex';
+</script>
+</body>
+</html>
