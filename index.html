@@ -23,11 +23,17 @@
   body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   /* Header */
-  header { background: var(--primary); color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
-  header h1 { font-size: 1.2rem; }
-  header .subtitle { font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
-  .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; display: none; }
+  header { background: var(--primary); color: white; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); gap: 8px; }
+  header h1 { font-size: 1.1rem; }
+  header .subtitle { font-size: 0.72rem; opacity: 0.85; margin-top: 2px; }
+  .header-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: none; }
   .back-btn.visible { display: block; }
+  .sync-btn { background: rgba(255,255,255,0.15); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+  .sync-btn:hover { background: rgba(255,255,255,0.25); }
+  .settings-btn { background: rgba(255,255,255,0.15); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+  .sync-status { font-size: 0.65rem; opacity: 0.8; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Nav */
   nav { display: flex; background: var(--primary-dark); overflow-x: auto; }
@@ -170,11 +176,17 @@
 <body>
 
 <header>
-  <div>
-    <h1>🧘 ניהול שיעורי יוגה</h1>
-    <div class="subtitle">שני ורביעי | 19:00</div>
+  <div class="header-left">
+    <div>
+      <h1>🧘 ניהול יוגה</h1>
+      <div class="sync-status" id="syncStatus">לא מחובר לענן</div>
+    </div>
   </div>
-  <button class="back-btn" id="backBtn" onclick="goBack()">← חזרה</button>
+  <div class="header-right">
+    <button class="back-btn" id="backBtn" onclick="goBack()">← חזרה</button>
+    <button class="sync-btn" id="syncBtn" onclick="manualSync()" title="סנכרן עכשיו">☁️</button>
+    <button class="settings-btn" onclick="openSettingsModal()" title="הגדרות">⚙️</button>
+  </div>
 </header>
 
 <nav id="mainNav">
@@ -367,6 +379,46 @@
     <div style="display:flex;gap:10px;margin-top:6px;">
       <button class="btn btn-primary" style="flex:1" onclick="saveNewCard()">שמור</button>
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal('addCardModal')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>⚙️ חיבור ל-Google Sheets</h3>
+    <div style="background:#eef5ef;border:1px solid var(--primary);border-radius:8px;padding:10px;margin-bottom:12px;font-size:0.78rem">
+      🔗 גיליון: <a href="https://docs.google.com/spreadsheets/d/1al8L0RoFs3A5JYS4QzQqOgSSMwbtC01V5R8QJW1WtAs/edit" target="_blank" style="color:var(--primary-dark);font-weight:600">yoga-manager ←פתח</a>
+    </div>
+    <div class="form-group">
+      <label>כתובת Apps Script Web App</label>
+      <input type="url" id="syncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" dir="ltr" style="font-size:0.78rem">
+    </div>
+    <details style="margin-bottom:12px">
+      <summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary-dark)">📋 הוראות הגדרה ראשונה</summary>
+      <div style="background:var(--bg);border-radius:8px;padding:10px;margin-top:8px;font-size:0.76rem;line-height:1.9">
+        1. <a href="https://script.google.com/home/start" target="_blank" style="color:var(--primary);font-weight:600">script.google.com</a> ← פרויקט חדש<br>
+        2. מחק את הקוד הקיים ← הדבק קוד מ-<strong>⬇️ הורד Code.gs</strong><br>
+        3. שמור (Ctrl+S) ← <strong>פרוס → פריסה חדשה → אפליקציית אינטרנט</strong><br>
+        4. "הפעל בשם: <strong>אני</strong>" | "גישה: <strong>כולם (Anyone)</strong>"<br>
+        5. <strong>פרוס</strong> ← אשר הרשאות ← העתק כתובת ← הדבק למעלה
+      </div>
+    </details>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="downloadScript()">⬇️ הורד Code.gs</button>
+      <button class="btn btn-primary btn-sm" onclick="runDiagnostics()">🔍 אבחן חיבור</button>
+      <button class="btn btn-danger btn-sm" onclick="clearSyncUrl()">🗑️ נתק</button>
+    </div>
+    <!-- DIAGNOSTICS PANEL -->
+    <div id="diagPanel" style="display:none;margin-bottom:12px">
+      <div style="font-size:0.78rem;font-weight:700;margin-bottom:6px">תוצאות אבחון:</div>
+      <div id="diagLog" style="background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:10px;font-size:0.72rem;font-family:monospace;direction:ltr;max-height:220px;overflow-y:auto;line-height:1.7"></div>
+      <button onclick="copyDiag()" style="margin-top:6px;font-size:0.72rem;background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer">📋 העתק לוג</button>
+    </div>
+    <div id="connectionStatus" style="display:none;padding:8px;border-radius:8px;font-size:0.82rem;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveSyncUrl()">שמור וחבר</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('settingsModal')">סגור</button>
     </div>
   </div>
 </div>
@@ -646,11 +698,13 @@ function markPaid(cardId, studentId) {
   const c = s.cards.find(x => x.id === cardId);
   if (!c) return;
   c.paid = true;
-  // Add to payment log
-  data.payments.push({ id: uid(), studentId, studentName: s.name, cardType: c.type, amount: c.amount, date: today() });
+  const payment = { id: uid(), studentId, studentName: s.name, cardType: c.type, amount: c.amount, date: today() };
+  data.payments.push(payment);
   saveData(data);
   renderStudentDetail(studentId);
   showToast('תשלום אושר ✓');
+  cloudOp('saveStudent', s);
+  cloudOp('addPayment', payment);
 }
 
 function markManualAttendance(studentId) {
@@ -671,6 +725,7 @@ function markAttendanceForStudent(studentId, date) {
   active.remainingClasses--;
   saveData(data);
   showToast(`נוכחות סומנה ל${s.name}`);
+  cloudOp('saveStudent', s);
   return true;
 }
 
@@ -682,12 +737,12 @@ function removeAttendance(studentId, date) {
   const att = s.attendance.find(a => a.date === date);
   if (!att) return;
   s.attendance = s.attendance.filter(a => a.date !== date);
-  // Restore class to card
   const c = s.cards.find(x => x.id === att.cardId);
   if (c) c.remainingClasses++;
   saveData(data);
   renderStudentDetail(studentId);
   showToast('נוכחות הוסרה');
+  cloudOp('saveStudent', s);
 }
 
 function deleteStudent(id) {
@@ -696,6 +751,7 @@ function deleteStudent(id) {
   data.students = data.students.filter(s => s.id !== id);
   saveData(data);
   showToast('תלמיד נמחק');
+  cloudOp('deleteStudent', { id });
   goBack();
 }
 
@@ -894,18 +950,17 @@ function saveActionArtPayment() {
   if (!name) { showToast('נא להזין שם משתתף'); return; }
   if (!amount || amount <= 0) { showToast('נא להזין סכום תקין'); return; }
   const data = loadData();
-  data.actionArtPayments.push({
-    id: uid(),
-    participantName: name,
-    artType: newArtType,
-    amount,
+  const payment = {
+    id: uid(), participantName: name, artType: newArtType, amount,
     seriesName: document.getElementById('artSeries').value.trim(),
     date: document.getElementById('artDate').value || today()
-  });
+  };
+  data.actionArtPayments.push(payment);
   saveData(data);
   closeModal('actionArtModal');
   renderPayments();
   showToast('תשלום Action Art נשמר!');
+  cloudOp('addArtPayment', payment);
 }
 
 function deleteArtPayment(id) {
@@ -915,6 +970,7 @@ function deleteArtPayment(id) {
   saveData(data);
   renderPayments();
   showToast('תשלום נמחק');
+  cloudOp('deleteArtPayment', { id });
 }
 
 // ===== SCHEDULE TAB =====
@@ -982,25 +1038,23 @@ function saveNewStudent() {
   const data = loadData();
   const id = uid();
   const student = { id, name, phone: document.getElementById('newStudentPhone').value.trim(), cards: [], attendance: [] };
+  let payment = null;
 
   if (newPurchaseType !== 'none') {
     const purchaseDate = document.getElementById('newPurchaseDate').value || today();
     const paid = document.getElementById('newPaidStatus').value === 'paid';
     const isCard8 = newPurchaseType === 'card8';
     const card = {
-      id: uid(),
-      type: newPurchaseType,
-      purchaseDate,
-      expiryDate: isCard8 ? addMonths(purchaseDate, 3) : addMonths(purchaseDate, 0).slice(0,7) + '-' + purchaseDate.slice(8),
-      totalClasses: isCard8 ? 8 : 1,
-      remainingClasses: isCard8 ? 8 : 1,
-      paid,
-      amount: isCard8 ? 450 : 65
+      id: uid(), type: newPurchaseType, purchaseDate,
+      expiryDate: isCard8 ? addMonths(purchaseDate, 3) : addMonths(purchaseDate, 1),
+      totalClasses: isCard8 ? 8 : 1, remainingClasses: isCard8 ? 8 : 1,
+      paid, amount: isCard8 ? 450 : 65
     };
-    // Single class expires same day (or end of month, let's say 1 month)
-    if (!isCard8) card.expiryDate = addMonths(purchaseDate, 1);
     student.cards.push(card);
-    if (paid) data.payments.push({ id: uid(), studentId: id, studentName: name, cardType: card.type, amount: card.amount, date: today() });
+    if (paid) {
+      payment = { id: uid(), studentId: id, studentName: name, cardType: card.type, amount: card.amount, date: today() };
+      data.payments.push(payment);
+    }
   }
 
   data.students.push(student);
@@ -1008,6 +1062,8 @@ function saveNewStudent() {
   closeModal('addStudentModal');
   renderStudents();
   showToast(`${name} נוסף בהצלחה!`);
+  cloudOp('saveStudent', student);
+  if (payment) cloudOp('addPayment', payment);
 }
 
 function saveNewCard() {
@@ -1018,21 +1074,23 @@ function saveNewCard() {
   const paid = document.getElementById('cardPaidStatus').value === 'paid';
   const isCard8 = newCardType === 'card8';
   const card = {
-    id: uid(),
-    type: newCardType,
-    purchaseDate,
+    id: uid(), type: newCardType, purchaseDate,
     expiryDate: isCard8 ? addMonths(purchaseDate, 3) : addMonths(purchaseDate, 1),
-    totalClasses: isCard8 ? 8 : 1,
-    remainingClasses: isCard8 ? 8 : 1,
-    paid,
-    amount: isCard8 ? 450 : 65
+    totalClasses: isCard8 ? 8 : 1, remainingClasses: isCard8 ? 8 : 1,
+    paid, amount: isCard8 ? 450 : 65
   };
   s.cards.push(card);
-  if (paid) data.payments.push({ id: uid(), studentId: s.id, studentName: s.name, cardType: card.type, amount: card.amount, date: today() });
+  let payment = null;
+  if (paid) {
+    payment = { id: uid(), studentId: s.id, studentName: s.name, cardType: card.type, amount: card.amount, date: today() };
+    data.payments.push(payment);
+  }
   saveData(data);
   closeModal('addCardModal');
   renderStudentDetail(currentStudentId);
   showToast('כרטיסייה נוספה!');
+  cloudOp('saveStudent', s);
+  if (payment) cloudOp('addPayment', payment);
 }
 
 // Close modal on overlay click
@@ -1040,9 +1098,402 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
+// ===== CLOUD SYNC (GET-only — the only reliable method for Apps Script) =====
+const SYNC_URL_KEY = 'yoga_sync_url';
+let syncUrl = localStorage.getItem(SYNC_URL_KEY) || '';
+let isSyncing = false;
+let pendingOps = 0;  // track in-flight operations for icon state
+
+// Send a single operation as a GET request with URL parameters.
+// Apps Script doGet handles all reads AND writes this way — no CORS issues.
+async function cloudOp(op, payload) {
+  if (!syncUrl) return true;
+  pendingOps++;
+  setSyncIcon('⏳');
+  try {
+    const d = encodeURIComponent(JSON.stringify(payload));
+    const url = `${syncUrl}?op=${op}&d=${d}&t=${Date.now()}`;
+    if (url.length > 7500) {
+      console.warn('cloudOp skipped (too large):', op, url.length, 'chars');
+      pendingOps--;
+      if (pendingOps === 0) setSyncIcon('☁️');
+      return false;
+    }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    let result;
+    try { result = JSON.parse(text); } catch (_) {
+      // Got HTML — authorization issue
+      const hint = text.includes('Sign in') ? ' — נדרשת התחברות לגוגל (בדוק הרשאות)' : '';
+      throw new Error('התגובה אינה JSON' + hint);
+    }
+    if (result.error) throw new Error(result.error);
+    updateSyncStatus('synced', new Date().toISOString());
+    pendingOps--;
+    if (pendingOps === 0) { setSyncIcon('✅'); setTimeout(() => setSyncIcon('☁️'), 1500); }
+    return true;
+  } catch (e) {
+    console.error('cloudOp error:', op, e.message);
+    pendingOps = 0;
+    setSyncIcon('⚠️');
+    updateSyncStatus('error', null);
+    // Show actionable toast on first error
+    showToast('שגיאת סנכרון: ' + e.message.slice(0, 60));
+    return false;
+  }
+}
+
+// Pull all data from cloud and overwrite local if cloud is same/newer version
+async function pullFromCloud() {
+  if (!syncUrl) return null;
+  isSyncing = true;
+  setSyncIcon('⏳');
+  try {
+    const res = await fetch(`${syncUrl}?op=read&t=${Date.now()}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    let remote;
+    try { remote = JSON.parse(text); } catch (_) {
+      throw new Error('תגובה לא תקינה — ודא הרשאות Apps Script והרצה ידנית');
+    }
+    if (remote.error) throw new Error(remote.error);
+    if (!Array.isArray(remote.students)) throw new Error('מבנה נתונים שגוי בענן');
+    const local = loadData();
+    if ((remote._version || 0) >= (local._version || 0)) {
+      saveData(remote);
+      updateSyncStatus('synced', remote._lastSaved);
+      setSyncIcon('✅');
+      setTimeout(() => setSyncIcon('☁️'), 2000);
+      return remote;
+    } else {
+      // Local is newer: push each student to cloud
+      await pushAllToCloud(local);
+      return local;
+    }
+  } catch (e) {
+    setSyncIcon('⚠️');
+    updateSyncStatus('error', e.message);
+    showToast('שגיאת סנכרון: ' + e.message);
+    return null;
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Push all local data to cloud record-by-record (for initial setup / full resync)
+async function pushAllToCloud(data) {
+  setSyncIcon('⏳');
+  updateSyncStatus('connecting', null);
+  let ok = true;
+  for (const student of data.students) {
+    const res = await cloudOp('saveStudent', student);
+    if (!res) { ok = false; break; }
+  }
+  for (const p of (data.actionArtPayments || [])) {
+    await cloudOp('addArtPayment', p);
+  }
+  for (const p of (data.payments || [])) {
+    await cloudOp('addPayment', p);
+  }
+  if (ok) { updateSyncStatus('synced', new Date().toISOString()); setSyncIcon('✅'); setTimeout(() => setSyncIcon('☁️'), 2000); }
+}
+
+async function manualSync() {
+  if (!syncUrl) { openSettingsModal(); return; }
+  const data = await pullFromCloud();
+  if (data) {
+    renderStudents();
+    if (currentTab === 'payments') renderPayments();
+    if (currentTab === 'reports') renderReports();
+    showToast('נתונים סונכרנו ✓');
+  }
+}
+
+function setSyncIcon(icon) {
+  const btn = document.getElementById('syncBtn');
+  if (btn) btn.textContent = icon;
+}
+
+function updateSyncStatus(state, detail) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (!syncUrl) { el.textContent = 'לא מחובר לענן'; return; }
+  if (state === 'synced') {
+    const t = detail ? new Date(detail) : new Date();
+    el.textContent = `סונכרן ${t.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`;
+  } else if (state === 'error') {
+    el.textContent = '⚠️ שגיאת סנכרון';
+  } else if (state === 'connecting') {
+    el.textContent = 'מתחבר...';
+  }
+}
+
+// ===== SETTINGS MODAL =====
+function openSettingsModal() {
+  document.getElementById('syncUrlInput').value = syncUrl;
+  document.getElementById('connectionStatus').style.display = 'none';
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function saveSyncUrl() {
+  const url = document.getElementById('syncUrlInput').value.trim();
+  syncUrl = url;
+  localStorage.setItem(SYNC_URL_KEY, url);
+  if (!url) {
+    updateSyncStatus('none', null);
+    setSyncIcon('☁️');
+    closeModal('settingsModal');
+    showToast('סנכרון נותק');
+    return;
+  }
+  closeModal('settingsModal');
+  updateSyncStatus('connecting', null);
+  // Pull from cloud; if cloud is empty and we have local data, push it up
+  pullFromCloud().then(data => {
+    if (data) {
+      renderStudents();
+      showToast('מחובר לענן! נתונים סונכרנו ✓');
+    }
+  });
+}
+
+function clearSyncUrl() {
+  syncUrl = '';
+  localStorage.removeItem(SYNC_URL_KEY);
+  document.getElementById('syncUrlInput').value = '';
+  document.getElementById('connectionStatus').style.display = 'none';
+  updateSyncStatus('none', null);
+  setSyncIcon('☁️');
+  showToast('סנכרון נותק');
+}
+
+let diagLines = [];
+
+function diagLog(icon, msg, detail) {
+  const line = `${icon} ${msg}${detail ? '\n   → ' + detail : ''}`;
+  diagLines.push(line);
+  const el = document.getElementById('diagLog');
+  if (el) { el.textContent = diagLines.join('\n'); el.scrollTop = el.scrollHeight; }
+}
+
+function copyDiag() {
+  navigator.clipboard.writeText(diagLines.join('\n')).then(() => showToast('לוג הועתק'));
+}
+
+async function runDiagnostics() {
+  const url = document.getElementById('syncUrlInput').value.trim();
+  diagLines = [];
+  const panel = document.getElementById('diagPanel');
+  const status = document.getElementById('connectionStatus');
+  panel.style.display = 'block';
+  status.style.display = 'none';
+
+  diagLog('🔍', 'מתחיל אבחון...');
+
+  // --- Step 1: URL format check ---
+  if (!url) { diagLog('❌', 'שגיאה: לא הוזנה כתובת'); return; }
+  diagLog('✓', 'כתובת הוזנה', url.slice(0, 60) + '...');
+
+  if (!url.startsWith('https://script.google.com/macros/s/')) {
+    diagLog('❌', 'כתובת שגויה', 'חייבת להתחיל ב: https://script.google.com/macros/s/');
+    diagLog('💡', 'טיפ: ודא שהעתקת את כתובת ה-Web App ולא כתובת עריכת הסקריפט');
+    return;
+  }
+  if (!url.endsWith('/exec') && !url.includes('/exec?')) {
+    diagLog('⚠️', 'הכתובת לא מסתיימת ב-/exec', 'ייתכן שהעתקת את כתובת ה-/dev. השתמש ב-/exec בלבד');
+  } else {
+    diagLog('✓', 'פורמט כתובת תקין (/exec)');
+  }
+
+  // --- Step 2: Network reachability ---
+  diagLog('⏳', 'בודק חיבור לאינטרנט...');
+  try {
+    await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
+    diagLog('✓', 'חיבור לאינטרנט תקין');
+  } catch (_) {
+    diagLog('❌', 'אין חיבור לאינטרנט'); return;
+  }
+
+  // --- Step 3: Raw GET to Apps Script ---
+  diagLog('⏳', 'שולח בקשת GET לסקריפט...');
+  let rawText = '';
+  let httpStatus = 0;
+  try {
+    const res = await fetch(`${url}?op=read&t=${Date.now()}`);
+    httpStatus = res.status;
+    rawText = await res.text();
+    diagLog('✓', `קיבלנו תגובה HTTP ${httpStatus}`, `${rawText.length} תווים`);
+  } catch (fetchErr) {
+    diagLog('❌', 'שגיאת רשת בגישה לסקריפט', fetchErr.message);
+    diagLog('💡', 'בדוק: האם הסקריפט פרוס? האם יש חסימת CORS?');
+    return;
+  }
+
+  // --- Step 4: Parse JSON ---
+  diagLog('⏳', 'מנסה לפרסר את התגובה כ-JSON...');
+  if (rawText.trim().startsWith('<')) {
+    diagLog('❌', 'קיבלנו HTML במקום JSON — בדרך כלל בעיית הרשאות');
+    diagLog('💡', 'פתרון: פתח את הסקריפט ← לחץ ▶ Run על doGet ← אשר הרשאות ← פרוס שוב');
+    diagLog('📄', 'תחילת התגובה:', rawText.slice(0, 200).replace(/\n/g, ' '));
+    return;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(rawText);
+    diagLog('✓', 'JSON תקין');
+  } catch (_) {
+    diagLog('❌', 'תגובה לא תקינה — לא JSON ולא HTML');
+    diagLog('📄', 'תגובה גולמית:', rawText.slice(0, 300));
+    return;
+  }
+
+  // --- Step 5: Check for script-level errors ---
+  if (parsed.error) {
+    diagLog('❌', 'הסקריפט החזיר שגיאה', parsed.error);
+    if (parsed.error.includes('not found') || parsed.error.includes('spreadsheet')) {
+      diagLog('💡', 'בעיית גישה לגיליון — ודא שה-SPREADSHEET_ID נכון ושיש לחשבון גישה');
+    }
+    return;
+  }
+
+  // --- Step 6: Validate data structure ---
+  if (!Array.isArray(parsed.students)) {
+    diagLog('❌', 'מבנה נתונים שגוי — חסר שדה students');
+    diagLog('💡', 'ודא שהדבקת את הגרסה העדכנית של Code.gs ופרסת מחדש');
+    diagLog('📄', 'תגובה:', JSON.stringify(parsed).slice(0, 200));
+    return;
+  }
+
+  diagLog('✓', `נתונים תקינים — ${parsed.students.length} תלמידים, גרסה ${parsed._version || 0}`);
+
+  // --- Step 7: Test write ---
+  diagLog('⏳', 'בודק כתיבה (saveStudent test)...');
+  const testStudent = { id: '__diag_test__', name: 'TEST', phone: '', cards: [], attendance: [] };
+  try {
+    const writeRes = await fetch(`${url}?op=saveStudent&d=${encodeURIComponent(JSON.stringify(testStudent))}&t=${Date.now()}`);
+    const writeText = await writeRes.text();
+    const writeJson = JSON.parse(writeText);
+    if (writeJson.ok) {
+      diagLog('✓', 'כתיבה הצליחה! גרסה ' + writeJson._version);
+      // Clean up test record
+      await fetch(`${url}?op=deleteStudent&d=${encodeURIComponent(JSON.stringify({id:'__diag_test__'}))}&t=${Date.now()}`);
+      diagLog('✓', 'רשומת הבדיקה נמחקה');
+    } else {
+      diagLog('❌', 'כתיבה נכשלה', writeJson.error || JSON.stringify(writeJson));
+    }
+  } catch (writeErr) {
+    diagLog('❌', 'שגיאה בכתיבה', writeErr.message);
+  }
+
+  // --- Done ---
+  diagLog('🎉', 'אבחון הושלם!');
+  status.style.display = 'block';
+  status.style.background = '#d4edda';
+  status.textContent = `✅ החיבור תקין! ${parsed.students.length} תלמידים בענן.`;
+}
+
+function downloadScript() {
+  const code = `// ================================================
+// Google Apps Script — ניהול שיעורי יוגה
+// ================================================
+// הוראות פריסה:
+// 1. script.google.com → פרויקט חדש → הדבק קוד זה → שמור
+// 2. פרוס → פריסה חדשה → אפליקציית אינטרנט
+//    הפעל בשם: אני | גישה: כולם (Anyone)
+// 3. אשר הרשאות → העתק כתובת → הדבק ב-⚙️ באפליקציה
+// ================================================
+
+const SPREADSHEET_ID = '1al8L0RoFs3A5JYS4QzQqOgSSMwbtC01V5R8QJW1WtAs';
+const SHEET_NAME = 'YogaData';
+const EMPTY = '{"students":[],"payments":[],"actionArtPayments":[],"_version":0}';
+
+function getSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) { sheet = ss.insertSheet(SHEET_NAME); sheet.getRange('A1').setValue(EMPTY); }
+  return sheet;
+}
+
+function readState(sheet) {
+  try {
+    const s = JSON.parse(sheet.getRange('A1').getValue() || EMPTY);
+    if (!Array.isArray(s.students)) s.students = [];
+    if (!Array.isArray(s.payments)) s.payments = [];
+    if (!Array.isArray(s.actionArtPayments)) s.actionArtPayments = [];
+    return s;
+  } catch (_) { return JSON.parse(EMPTY); }
+}
+
+function ok(state) {
+  return ContentService.createTextOutput(
+    JSON.stringify({ok:true,_version:state._version,_lastSaved:state._lastSaved})
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  const op = (e.parameter && e.parameter.op) || 'read';
+  let d = null;
+  if (e.parameter && e.parameter.d) {
+    try { d = JSON.parse(decodeURIComponent(e.parameter.d)); } catch(_) {}
+  }
+  try {
+    const lock = LockService.getScriptLock();
+    if (!lock.tryLock(15000)) return ContentService.createTextOutput('{"error":"lock"}').setMimeType(ContentService.MimeType.JSON);
+    const sheet = getSheet();
+    if (op === 'read') {
+      const state = readState(sheet);
+      lock.releaseLock();
+      return ContentService.createTextOutput(JSON.stringify(state)).setMimeType(ContentService.MimeType.JSON);
+    }
+    const state = readState(sheet);
+    switch(op) {
+      case 'saveStudent':
+        if (d && d.id) { const i = state.students.findIndex(s=>s.id===d.id); if(i>=0) state.students[i]=d; else state.students.push(d); }
+        break;
+      case 'deleteStudent':
+        if (d && d.id) { state.students=state.students.filter(s=>s.id!==d.id); state.payments=state.payments.filter(p=>p.studentId!==d.id); }
+        break;
+      case 'addPayment':
+        if (d && d.id && !state.payments.some(p=>p.id===d.id)) state.payments.push(d);
+        break;
+      case 'addArtPayment':
+        if (d && d.id && !state.actionArtPayments.some(p=>p.id===d.id)) state.actionArtPayments.push(d);
+        break;
+      case 'deleteArtPayment':
+        if (d && d.id) state.actionArtPayments=state.actionArtPayments.filter(p=>p.id!==d.id);
+        break;
+    }
+    state._version = (state._version||0) + 1;
+    state._lastSaved = new Date().toISOString();
+    sheet.getRange('A1').setValue(JSON.stringify(state));
+    lock.releaseLock();
+    return ok(state);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({error:err.message})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) { return doGet(e); }`;
+  const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Code.gs';
+  a.click();
+}
+
 // ===== INIT =====
 renderStudents();
 document.getElementById('fab').style.display = 'flex';
+// Load sync URL from storage and update status
+if (syncUrl) {
+  updateSyncStatus('connecting', null);
+  pullFromCloud().then(data => {
+    if (data) renderStudents();
+  });
+} else {
+  updateSyncStatus('none', null);
+}
 </script>
 </body>
 </html>
