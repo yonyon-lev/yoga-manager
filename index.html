@@ -164,6 +164,10 @@
   .pill { padding: 6px 14px; border-radius: 20px; border: 2px solid var(--border); background: white; font-size: 0.82rem; cursor: pointer; font-weight: 600; }
   .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
 
+  /* Friend badge */
+  .badge-friend { background: #e8d5f5; color: #7c3aed; }
+  .att-day .friend-note { font-size: 0.62rem; color: #7c3aed; margin-top: 2px; }
+
   @media (max-width: 400px) {
     .summary-grid { grid-template-columns: 1fr 1fr; }
     .summary-3 { grid-template-columns: 1fr 1fr; }
@@ -651,6 +655,7 @@ function renderStudentDetail(id) {
           return `<div class="att-day present">
             <div class="date">${formatDate(a.date)}</div>
             <div class="weekday">${weekdays[d.getDay()]}</div>
+            ${a.friendJoined ? `<div class="friend-note">+חבר/ה (x2)</div>` : ''}
             <div style="margin-top:4px;font-size:0.7rem;cursor:pointer;color:#c0392b" onclick="removeAttendance('${id}','${a.date}')">✕ הסר</div>
           </div>`;
         }).join('')}</div>`;
@@ -665,6 +670,14 @@ function renderStudentDetail(id) {
         </div>
         <button class="btn btn-danger btn-sm" onclick="deleteStudent('${id}')">מחק</button>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 הערות</h2>
+      <div class="form-group" style="margin-bottom:8px">
+        <textarea id="studentNotes" rows="3" placeholder="הערות חופשיות על התלמיד/ה..." style="resize:vertical">${(s.notes||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveStudentNotes('${id}')">שמור הערות</button>
     </div>
 
     <div class="card">
@@ -703,6 +716,17 @@ function markPaid(cardId, studentId) {
   fbSave('yoga_payments', payment.id, payment);
 }
 
+function saveStudentNotes(studentId) {
+  const notes = document.getElementById('studentNotes').value;
+  const data = loadData();
+  const s = data.students.find(x => x.id === studentId);
+  if (!s) return;
+  s.notes = notes;
+  saveData(data);
+  showToast('הערות נשמרו ✓');
+  fbSave('yoga_students', s.id, s);
+}
+
 function markManualAttendance(studentId) {
   const date = document.getElementById('manualAttDate').value;
   if (!date) return;
@@ -710,17 +734,21 @@ function markManualAttendance(studentId) {
   renderStudentDetail(studentId);
 }
 
-function markAttendanceForStudent(studentId, date) {
+function markAttendanceForStudent(studentId, date, friendJoined = false) {
   const data = loadData();
   const s = data.students.find(x => x.id === studentId);
   if (!s) return false;
   if (s.attendance.some(a => a.date === date)) { showToast('נוכחות כבר סומנה לתאריך זה'); return false; }
   const active = getActiveCard(s);
   if (!active) { showToast('אין כרטיסייה פעילה — יש להוסיף כרטיסייה תחילה'); return false; }
-  s.attendance.push({ date, cardId: active.id });
-  active.remainingClasses--;
+  const deduct = friendJoined ? 2 : 1;
+  if (active.remainingClasses < deduct) { showToast('אין מספיק שיעורים בכרטיסייה לניכוי של 2'); return false; }
+  const record = { date, cardId: active.id };
+  if (friendJoined) record.friendJoined = true;
+  s.attendance.push(record);
+  active.remainingClasses -= deduct;
   saveData(data);
-  showToast(`נוכחות סומנה ל${s.name}`);
+  showToast(friendJoined ? `נוכחות + חבר/ה סומנה ל${s.name} (נוכו 2 שיעורים)` : `נוכחות סומנה ל${s.name}`);
   fbSave('yoga_students', s.id, s);
   return true;
 }
@@ -734,7 +762,7 @@ function removeAttendance(studentId, date) {
   if (!att) return;
   s.attendance = s.attendance.filter(a => a.date !== date);
   const c = s.cards.find(x => x.id === att.cardId);
-  if (c) c.remainingClasses++;
+  if (c) c.remainingClasses += (att.friendJoined ? 2 : 1);
   saveData(data);
   renderStudentDetail(studentId);
   showToast('נוכחות הוסרה');
@@ -774,21 +802,25 @@ function renderAttendanceForDate() {
       const present = s.attendance.some(a => a.date === date);
       const active = getActiveCard(s);
       const canMark = !present && active;
+      const canMarkFriend = canMark && active && active.remainingClasses >= 2;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-weight:600">${s.name}</div>
           <div style="font-size:0.75rem;color:var(--text-light)">${active ? `נותרו ${active.remainingClasses} שיעורים` : 'אין כרטיסייה פעילה'}</div>
         </div>
         ${present
-          ? `<span class="badge badge-ok">✓ נוכח</span>`
-          : `<button class="btn btn-primary btn-sm" ${canMark?'':'disabled'} onclick="markAttAndRefresh('${s.id}','${date}')">סמן נוכחות</button>`}
+          ? `<span class="badge badge-ok">✓ נוכח${s.attendance.find(a=>a.date===date)?.friendJoined ? ' <span class="badge badge-friend" style="margin-right:4px">+חבר/ה</span>' : ''}</span>`
+          : `<div style="display:flex;gap:6px">
+              <button class="btn btn-primary btn-sm" ${canMark?'':'disabled'} onclick="markAttAndRefresh('${s.id}','${date}')">סמן נוכחות</button>
+              <button class="btn btn-sm" style="background:#7c3aed;color:white;${canMarkFriend?'':'opacity:0.5;cursor:not-allowed'}" ${canMarkFriend?'':'disabled'} onclick="markAttAndRefresh('${s.id}','${date}',true)" title="מנכה 2 שיעורים">+ חבר/ה</button>
+            </div>`}
       </div>`;
     }).join('')}
   `;
 }
 
-function markAttAndRefresh(studentId, date) {
-  markAttendanceForStudent(studentId, date);
+function markAttAndRefresh(studentId, date, friendJoined = false) {
+  markAttendanceForStudent(studentId, date, friendJoined);
   renderAttendanceForDate();
 }
 
@@ -1033,7 +1065,7 @@ function saveNewStudent() {
   if (!name) { showToast('נא להזין שם תלמיד'); return; }
   const data = loadData();
   const id = uid();
-  const student = { id, name, phone: document.getElementById('newStudentPhone').value.trim(), cards: [], attendance: [] };
+  const student = { id, name, phone: document.getElementById('newStudentPhone').value.trim(), notes: '', cards: [], attendance: [] };
   let payment = null;
 
   if (newPurchaseType !== 'none') {
