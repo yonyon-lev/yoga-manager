@@ -170,6 +170,16 @@
   .badge-friend { background: #e8d5f5; color: #7c3aed; }
   .att-day .friend-note { font-size: 0.62rem; color: #7c3aed; margin-top: 2px; }
 
+  /* History */
+  .history-date-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 6px; border-bottom: 1px solid var(--border); cursor: pointer; border-radius: 6px; transition: background 0.15s; }
+  .history-date-item:last-child { border-bottom: none; }
+  .history-date-item:active { background: #f0ede8; }
+  .history-date-item.selected { background: #eef5ef; padding: 10px 10px; border-bottom: none; border-radius: 8px; outline: 2px solid var(--primary); margin-bottom: 2px; }
+  .history-count { background: var(--primary); color: white; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; min-width: 36px; text-align: center; }
+  .history-student-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .history-student-row:last-child { border-bottom: none; }
+  .history-student-row:active { background: #f0f0f0; }
+
   @media (max-width: 400px) {
     .summary-grid { grid-template-columns: 1fr 1fr; }
     .summary-3 { grid-template-columns: 1fr 1fr; }
@@ -201,6 +211,7 @@
   <button onclick="showTab('payments')">תשלומים</button>
   <button onclick="showTab('reports')">דוחות</button>
   <button onclick="showTab('schedule')">לוח שיעורים</button>
+  <button onclick="showTab('history')">היסטוריה</button>
 </nav>
 
 <main>
@@ -303,6 +314,11 @@
       <h2>שיעורים עתידיים</h2>
       <div id="upcomingClasses"></div>
     </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-content" id="tab-history">
+    <div id="historyContent"></div>
   </div>
 
   <!-- STUDENT DETAIL VIEW -->
@@ -533,6 +549,7 @@ let newPurchaseType = 'card8';
 let newCardType = 'card8';
 let newArtType = 'series';
 let paymentsFilter = 'all';
+let historySelectedDate = null;
 
 // ===== HELPERS =====
 function today() {
@@ -593,7 +610,7 @@ function showTab(tab) {
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   const navBtns = document.querySelectorAll('nav button');
-  const tabMap = { students: 0, attendance: 1, payments: 2, reports: 3, schedule: 4 };
+  const tabMap = { students: 0, attendance: 1, payments: 2, reports: 3, schedule: 4, history: 5 };
   if (tabMap[tab] !== undefined) navBtns[tabMap[tab]].classList.add('active');
   currentTab = tab;
   document.getElementById('backBtn').classList.remove('visible');
@@ -604,6 +621,7 @@ function showTab(tab) {
   if (tab === 'reports') renderReports();
   if (tab === 'schedule') renderUpcoming();
   if (tab === 'students') renderStudents();
+  if (tab === 'history') renderHistory();
 }
 
 function openStudentDetail(id) {
@@ -1252,6 +1270,115 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
+// ===== HISTORY TAB =====
+function renderHistory() {
+  const data = loadData();
+  const el = document.getElementById('historyContent');
+
+  // Build date → [{name, id, friendJoined}] map
+  const dateMap = {};
+  data.students.forEach(s => {
+    (s.attendance || []).forEach(a => {
+      if (!dateMap[a.date]) dateMap[a.date] = [];
+      dateMap[a.date].push({ name: s.name, id: s.id, friendJoined: !!a.friendJoined });
+    });
+  });
+
+  const allDates = Object.keys(dateMap).sort((a, b) => b.localeCompare(a));
+
+  if (allDates.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="emoji">📅</div><div>אין שיעורים מתועדים</div><div style="margin-top:8px;font-size:0.8rem">סמן נוכחות בלשונית "נוכחות" כדי לראות כאן היסטוריה</div></div>`;
+    return;
+  }
+
+  const weekdays = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const MONTHS_HE = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+  const totalSessions = allDates.length;
+  const totalAttendance = allDates.reduce((sum, d) => sum + dateMap[d].length, 0);
+
+  const statsHtml = `
+    <div class="summary-grid" style="margin-bottom:16px">
+      <div class="summary-box">
+        <div class="num">${totalSessions}</div>
+        <div class="lbl">שיעורים מתועדים</div>
+      </div>
+      <div class="summary-box">
+        <div class="num">${totalAttendance}</div>
+        <div class="lbl">נוכחויות סה"כ</div>
+      </div>
+    </div>`;
+
+  let detailHtml = '';
+  if (historySelectedDate && dateMap[historySelectedDate]) {
+    const students = [...dateMap[historySelectedDate]].sort((a, b) => a.name.localeCompare(b.name, 'he'));
+    const d = new Date(historySelectedDate + 'T12:00:00');
+    const friendCount = students.filter(s => s.friendJoined).length;
+    detailHtml = `
+      <div class="card" style="border:2px solid var(--primary);margin-bottom:16px">
+        <h2 style="margin-bottom:6px">📋 ${formatDate(historySelectedDate)} — ${weekdays[d.getDay()]}</h2>
+        <div style="font-size:0.82rem;color:var(--text-light);margin-bottom:12px">
+          ${students.length} ${students.length === 1 ? 'תלמיד' : 'תלמידים'}${friendCount > 0 ? ` · ${friendCount} הביאו חבר/ה` : ''}
+        </div>
+        ${students.map(s => `
+          <div class="history-student-row" onclick="openStudentDetail('${s.id}')">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-weight:600">${s.name}</span>
+              ${s.friendJoined ? '<span class="badge badge-friend">+חבר/ה</span>' : ''}
+            </div>
+            <span style="color:var(--text-light);font-size:1rem">←</span>
+          </div>`).join('')}
+      </div>`;
+  } else {
+    detailHtml = `
+      <div class="card" style="text-align:center;color:var(--text-light);padding:20px 16px;margin-bottom:16px">
+        <div style="font-size:1.8rem;margin-bottom:8px">👆</div>
+        <div style="font-size:0.9rem">בחר תאריך מהרשימה למטה לצפייה בפרטי השיעור</div>
+      </div>`;
+  }
+
+  const byMonth = {};
+  allDates.forEach(date => {
+    const ym = date.slice(0, 7);
+    if (!byMonth[ym]) byMonth[ym] = [];
+    byMonth[ym].push(date);
+  });
+
+  const dateListHtml = Object.keys(byMonth).sort((a, b) => b.localeCompare(a)).map(ym => {
+    const [y, m] = ym.split('-');
+    const dates = byMonth[ym];
+    const monthTotal = dates.reduce((sum, d) => sum + dateMap[d].length, 0);
+    return `
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>${MONTHS_HE[+m]} ${y}</span>
+        <span style="font-weight:400">${monthTotal} נוכחויות · ${dates.length} שיעורים</span>
+      </div>
+      <div class="card" style="padding:4px 12px">
+        ${dates.map(date => {
+          const students = dateMap[date];
+          const d = new Date(date + 'T12:00:00');
+          const isSelected = date === historySelectedDate;
+          return `
+            <div class="history-date-item${isSelected ? ' selected' : ''}" onclick="selectHistoryDate('${date}')">
+              <div>
+                <div style="font-weight:600">${formatDate(date)}</div>
+                <div style="font-size:0.75rem;color:var(--text-light)">${weekdays[d.getDay()]}</div>
+              </div>
+              <span class="history-count">${students.length} 👤</span>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = statsHtml + detailHtml + dateListHtml;
+}
+
+function selectHistoryDate(date) {
+  historySelectedDate = date;
+  renderHistory();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ===== FIREBASE FIRESTORE SYNC =====
 const FB_CONFIG_KEY = 'yoga_firebase_config';
 let db = null;
@@ -1290,6 +1417,7 @@ function setupRealtimeListeners() {
     if (currentStudentId && currentTab === 'students') renderStudentDetail(currentStudentId);
     if (document.getElementById('tab-student-detail').classList.contains('active')) renderStudentDetail(currentStudentId);
     if (currentTab === 'attendance') renderAttendanceForDate();
+    if (currentTab === 'history') renderHistory();
     setSyncIcon('✅');
     updateSyncStatus('synced', new Date().toISOString());
     setTimeout(() => setSyncIcon('☁️'), 2000);
